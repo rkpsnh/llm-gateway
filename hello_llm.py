@@ -3,7 +3,7 @@ import os
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 MODEL = "llama3.2:1b"
-TIMEOUT = float(os.getenv(""))
+TIMEOUT = float(os.getenv("LLM_TIMEOUT", "60"))
 
 class LLMUnavailableError(Exception):
     pass
