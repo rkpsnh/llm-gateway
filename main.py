@@ -1,11 +1,13 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
-from hello_llm import ask, LLMUnavailableError, MODEL
+from hello_llm import ask, LLMUnavailableError, LLMTimeOutError, LLMUpstreamError, MODEL
 import time
 import json
 import uuid
 import datetime
+import os
+os.makedirs("logs", exist_ok=True)
 
 app = FastAPI(title="LLM Gateway")
 
@@ -34,7 +36,9 @@ def chat(req: ChatRequest):
         "prompt_chars":"", 
         "latency_ms": 0, #DONE
         "status_code": "",
-        "prompt_tokens": 0
+        "prompt_tokens": None,
+        "completion_tokens": None,
+        "error": None
         }
 
     # Measure Latency
@@ -53,20 +57,37 @@ def chat(req: ChatRequest):
         ts = ct.timestamp()
         log["timestamp"] = ts
 
+
+        # Ask
         response = ask(req.prompt)
+        reply = response["reply"]
 
         # Status code
         log["status_code"] = 200
 
         # Prompt tokens
+        log["prompt_tokens"] = response["prompt_tokens"]
 
-        return ChatResponse(reply=response, model=MODEL)
+        log["completion_tokens"] = response["completion_tokens"]
+        return ChatResponse(reply=reply, model=MODEL)
     
     except LLMUnavailableError as e:
         # Status code
         log["status_code"] = 503
 
-        raise HTTPException(status_code=503, detail=str(e))
+        log["error"] = str(e)
+        raise HTTPException(status_code=503, detail="LLM backend unavailable")
+    
+    except LLMTimeOutError as e:
+        # Status code
+        log["status_code"] = 504
+        log["error"] = str(e)
+        raise HTTPException(status_code=504, detail="LLM backend timed out")
+    
+    except LLMUpstreamError as e:
+        log["status_code"] = 502
+        log["error"] = str(e)
+        raise HTTPException(status_code=502, detail="LLM backend returned an error")
     
     finally:
         # Stop timer
