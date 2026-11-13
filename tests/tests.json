@@ -1,0 +1,14 @@
+[
+    {
+        "id":1,
+        "prompt":"What is an LLM gateway? Answer in one sentence",
+        "must_contain_any_of":["between", "route", "proxy", "requests", "API"],
+        "must_not_contain":["text-to-speech"]
+    },
+    {
+        "id":2,
+        "prompt":"What is the radius of a circle? Answer in one sentence.",
+        "must_contain_any_of":["center"],
+        "must_not_contain":["volume"]
+    }
+]
